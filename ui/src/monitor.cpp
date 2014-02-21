@@ -33,6 +33,7 @@
 #include <QtXml>
 
 #include "monitorgraphicsview.h"
+#include "monitor3d/monitor3dview.h"
 #include "fixtureselection.h"
 #include "monitorfixture.h"
 #include "monitorlayout.h"
@@ -97,15 +98,25 @@ Monitor::~Monitor()
 
 void Monitor::initView()
 {
-    if (m_props->displayMode() == MonitorProperties::DMX)
+    switch (m_props->displayMode())
     {
+    case MonitorProperties::DMX:
         initDMXToolbar();
         initDMXView();
-    }
-    else
-    {
+        break;
+
+    case MonitorProperties::Graphics:
         initGraphicsToolbar();
         initGraphicsView();
+        break;
+
+    case MonitorProperties::ThreeD:
+        init3dToolbar();
+        init3dView();
+        break;
+
+    default:
+        break;
     }
 }
 
@@ -157,6 +168,24 @@ void Monitor::initGraphicsView()
 
     connect(m_graphicsView, SIGNAL(fixtureMoved(quint32,QPointF)),
             this, SLOT(slotFixtureMoved(quint32,QPointF)));
+}
+
+void Monitor::init3dView()
+{
+    m_3dView = new Monitor3dView(m_doc, this);
+    layout()->addWidget(m_3dView);
+
+//    if (m_props->gridUnits() == MonitorProperties::Meters)
+//        m_3dView->setGridMetrics(1000.0);
+//    else if (m_props->gridUnits() == MonitorProperties::Feet)
+//        m_graphicsView->setGridMetrics(304.8);
+//    m_graphicsView->setGridSize(m_props->gridSize());
+
+//    foreach (quint32 fid, m_props->fixtureItemsID())
+//        m_graphicsView->addFixture(fid, m_props->fixturePosition(fid));
+
+//    connect(m_graphicsView, SIGNAL(fixtureMoved(quint32,QPointF)),
+//            this, SLOT(slotFixtureMoved(quint32,QPointF)));
 }
 
 Monitor* Monitor::instance()
@@ -297,6 +326,62 @@ void Monitor::initGraphicsToolbar()
     Q_ASSERT(layout() != NULL);
     layout()->setMenuBar(m_toolBar);
 
+    action = m_toolBar->addAction(tr("3D View"));
+    m_toolBar->addSeparator();
+    action->setData(MonitorProperties::ThreeD);
+    connect(action, SIGNAL(triggered(bool)),
+            this, SLOT(slotSwitchMode()));
+
+    QLabel *label = new QLabel(tr("Size:"));
+    label->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+    m_toolBar->addWidget(label);
+
+    QSize gridSize = m_props->gridSize();
+
+    m_gridWSpin = new QSpinBox();
+    m_gridWSpin->setMinimum(1);
+    m_gridWSpin->setValue(gridSize.width());
+    m_toolBar->addWidget(m_gridWSpin);
+    connect(m_gridWSpin, SIGNAL(valueChanged(int)),
+            this, SLOT(slotGridWidthChanged(int)));
+
+    QLabel *xlabel = new QLabel("x");
+    label->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+    m_toolBar->addWidget(xlabel);
+    m_gridHSpin = new QSpinBox();
+    m_gridHSpin->setMinimum(1);
+    m_gridHSpin->setValue(gridSize.height());
+    m_toolBar->addWidget(m_gridHSpin);
+    connect(m_gridHSpin, SIGNAL(valueChanged(int)),
+            this, SLOT(slotGridHeightChanged(int)));
+
+    m_unitsCombo = new QComboBox();
+    m_unitsCombo->addItem(tr("Meters"), MonitorProperties::Meters);
+    m_unitsCombo->addItem(tr("Feet"), MonitorProperties::Feet);
+    if (m_props->gridUnits() == MonitorProperties::Feet)
+        m_unitsCombo->setCurrentIndex(1);
+    m_toolBar->addWidget(m_unitsCombo);
+    connect(m_unitsCombo, SIGNAL(currentIndexChanged(int)),
+            this, SLOT(slotGridUnitsChanged(int)));
+
+    m_toolBar->addSeparator();
+
+    m_toolBar->addAction(QIcon(":/edit_add.png"), tr("Add fixture"),
+                       this, SLOT(slotAddFixture()));
+    m_toolBar->addAction(QIcon(":/edit_remove.png"), tr("Remove fixture"),
+                       this, SLOT(slotRemoveFixture()));
+}
+
+void Monitor::init3dToolbar()
+{
+    QAction* action;
+
+    m_toolBar = new QToolBar(this);
+
+    /* Menu bar */
+    Q_ASSERT(layout() != NULL);
+    layout()->setMenuBar(m_toolBar);
+
     action = m_toolBar->addAction(tr("DMX View"));
     m_toolBar->addSeparator();
     action->setData(MonitorProperties::DMX);
@@ -342,7 +427,6 @@ void Monitor::initGraphicsToolbar()
     m_toolBar->addAction(QIcon(":/edit_remove.png"), tr("Remove fixture"),
                        this, SLOT(slotRemoveFixture()));
 }
-
 void Monitor::slotChooseFont()
 {
     bool ok = false;
@@ -379,8 +463,9 @@ void Monitor::slotSwitchMode()
     disconnect(m_doc->inputOutputMap(), SIGNAL(universesWritten(int, const QByteArray&)),
                this, SLOT(slotUniversesWritten(int, const QByteArray&)));
 
-    if (m_props->displayMode() == MonitorProperties::DMX)
+    switch (m_props->displayMode())
     {
+    case MonitorProperties::DMX:
         while (m_monitorFixtures.isEmpty() == false)
             delete m_monitorFixtures.takeFirst();
         layout()->removeWidget(m_scrollArea);
@@ -389,12 +474,22 @@ void Monitor::slotSwitchMode()
         delete m_scrollArea;
         m_scrollArea = NULL;
         m_toolBar->deleteLater();
-    }
-    else
-    {
+        break;
+
+    case MonitorProperties::Graphics:
         m_toolBar->deleteLater();
         m_graphicsView->deleteLater();
+        break;
+
+    case MonitorProperties::ThreeD:
+        m_toolBar->deleteLater();
+        m_3dView->deleteLater();
+        break;
+
+    default:
+        break;
     }
+
     m_toolBar = NULL;
 
     m_props->setDisplayMode(MonitorProperties::DisplayMode(action->data().toInt()));

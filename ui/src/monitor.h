@@ -27,6 +27,7 @@
 #include "monitorproperties.h"
 
 class MonitorGraphicsView;
+class Monitor3dView;
 class MonitorFixture;
 class MonitorLayout;
 class QDomDocument;
@@ -72,6 +73,9 @@ public:
     /** Initialize the monitor view in 2D graphics mode */
     void initGraphicsView();
 
+    /** Initialize the monitor view in 3D graphics mode */
+    void init3dView();
+
 protected:
     void saveSettings();
 
@@ -93,6 +97,8 @@ protected:
     void initDMXToolbar();
 
     void initGraphicsToolbar();
+
+    void init3dToolbar();
 
 protected slots:
     /** Menu action slot for font selection */
@@ -172,6 +178,13 @@ protected:
     QSpinBox* m_gridWSpin;
     QSpinBox *m_gridHSpin;
     QComboBox *m_unitsCombo;
+
+    /********************************************************************
+     * 3D View
+     ********************************************************************/
+
+protected:
+    Monitor3dView* m_3dView;
 };
 
 /** @} */
