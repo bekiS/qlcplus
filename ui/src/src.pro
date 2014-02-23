@@ -14,11 +14,13 @@ greaterThan(QT_MAJOR_VERSION, 4): QT += widgets multimedia
 INCLUDEPATH     += ../../engine/src ../../engine/src/audio
 DEPENDPATH      += ../../engine/src
 QMAKE_LIBDIR    += ../../engine/src
-LIBS            += -lqlcplusengine
+
+LIBS            += -lqlcplusengine -lIrrlicht
 win32:QMAKE_LFLAGS += -shared
 
 # Types
 INCLUDEPATH += ../../plugins/interfaces
+INCLUDEPATH += /usr/include/irrlicht
 
 # Web Access
 INCLUDEPATH     += ../../webaccess
@@ -129,7 +131,8 @@ HEADERS += aboutbox.h \
            vcxypadfixture.h \
            vcxypadfixtureeditor.h \
            vcxypadproperties.h \
-           virtualconsole.h
+           virtualconsole.h \
+           monitor3d/monitor3dview.h
 
 FORMS += aboutbox.ui \
          addchannelsgroup.ui \
@@ -265,7 +268,8 @@ SOURCES += aboutbox.cpp \
            vcxypadfixture.cpp \
            vcxypadfixtureeditor.cpp \
            vcxypadproperties.cpp \
-           virtualconsole.cpp
+           virtualconsole.cpp \
+           monitor3d/monitor3dview.cpp
 
 TRANSLATIONS += qlcplus_fi_FI.ts
 TRANSLATIONS += qlcplus_fr_FR.ts
